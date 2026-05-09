@@ -1,8 +1,8 @@
 package br.com.lucas.shortlink.controllers;
 
-import br.com.lucas.shortlink.dtos.LoginRequestDTO;
-import br.com.lucas.shortlink.dtos.LoginResponseDTO;
-import br.com.lucas.shortlink.dtos.RegisterRequestDTO;
+import br.com.lucas.shortlink.dtos.request.LoginRequestDTO;
+import br.com.lucas.shortlink.dtos.response.LoginResponseDTO;
+import br.com.lucas.shortlink.dtos.request.RegisterRequestDTO;
 import br.com.lucas.shortlink.entities.User;
 import br.com.lucas.shortlink.repositories.UserRepository;
 import br.com.lucas.shortlink.security.JwtService;
@@ -17,18 +17,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
-public class AuthController {
+@RequestMapping("/v1/auth")
+public class AuthControllerV1 {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public AuthController(AuthenticationManager authenticationManager,
-                          JwtService jwtService,
-                          UserRepository userRepository,
-                          PasswordEncoder passwordEncoder) {
+    public AuthControllerV1(AuthenticationManager authenticationManager,
+                            JwtService jwtService,
+                            UserRepository userRepository,
+                            PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userRepository = userRepository;

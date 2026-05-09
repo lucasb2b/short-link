@@ -29,6 +29,9 @@ public class Link {
     @Column(unique = true, nullable = false)
     private String shortCode;
 
+    @Column(unique = true)
+    private String shortUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonBackReference

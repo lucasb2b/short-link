@@ -1,3 +1,3 @@
-package br.com.lucas.shortlink.dtos;
+package br.com.lucas.shortlink.dtos.response;
 
 public record LoginResponseDTO(String token) { }
