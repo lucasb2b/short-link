@@ -46,4 +46,8 @@ public class LinkService {
                 .orElse(null);
     }
 
+    public Link findByShortCode(String shortCode){
+        return linkRepository.findByShortCode(shortCode).orElse(null);
+    }
+
 }

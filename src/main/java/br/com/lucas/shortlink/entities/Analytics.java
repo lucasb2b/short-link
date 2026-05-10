@@ -18,15 +18,30 @@ import java.util.UUID;
 public class Analytics {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID idAnalytics;
 
+    @Column
     private String ip;
+
+    @Column
     private String userAgent;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "link_id")
     private Link link;
+
+    @Column
+    private String browser;
+
+    @Column
+    private String operatingSystem;
+
+    @Column
+    private String deviceType;
+
+    @Column
+    private String country;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
