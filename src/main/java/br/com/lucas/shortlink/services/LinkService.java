@@ -2,25 +2,41 @@ package br.com.lucas.shortlink.services;
 
 import br.com.lucas.shortlink.entities.Link;
 import br.com.lucas.shortlink.entities.User;
+import br.com.lucas.shortlink.exceptions.LinkNotFoundException;
+import br.com.lucas.shortlink.exceptions.UserNotFoundException;
 import br.com.lucas.shortlink.repositories.LinkRepository;
 import br.com.lucas.shortlink.repositories.UserRepository;
 import br.com.lucas.shortlink.utils.ShortCodeGenerator;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import br.com.lucas.shortlink.exceptions.InvalidUrlException;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 @Service
 public class LinkService {
 
-    @Autowired
-    private LinkRepository linkRepository;
+    private final LinkRepository linkRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    @Value("${app.base-url}")
+    private String baseUrl;
 
-    public Link createLink(String originalUrl, String userEmail){
+    public LinkService(
+            LinkRepository linkRepository,
+            UserRepository userRepository
+    ){
+        this.linkRepository = linkRepository;
+        this.userRepository = userRepository;
+    }
+
+    public Link createShortLink(String originalUrl, String userEmail){
+
+        validateUrl(originalUrl);
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(UserNotFoundException::new);
 
         String shortCode;
         boolean exists;
@@ -33,7 +49,7 @@ public class LinkService {
         Link link = Link.builder()
                 .originalUrl(originalUrl)
                 .shortCode(shortCode)
-                .shortUrl("http://localhost:8080/" + shortCode)
+                .shortUrl(baseUrl + "/" + shortCode)
                 .user(user)
                 .build();
 
@@ -47,7 +63,29 @@ public class LinkService {
     }
 
     public Link findByShortCode(String shortCode){
-        return linkRepository.findByShortCode(shortCode).orElse(null);
+        return linkRepository.findByShortCode(shortCode)
+                .orElseThrow(LinkNotFoundException::new);
+    }
+
+    private void validateUrl(String url){
+        try{
+            URI uri = new URI(url);
+
+            String scheme = uri.getScheme();
+
+            if(scheme == null){
+                throw new InvalidUrlException("URL inválida");
+            }
+
+            if(
+                    !scheme.equalsIgnoreCase("http")
+                    && !scheme.equalsIgnoreCase("https")
+            ){
+                throw new InvalidUrlException("Protocolo não permitido");
+            }
+        } catch (URISyntaxException e){
+            throw new InvalidUrlException("URL inválida");
+        }
     }
 
 }
