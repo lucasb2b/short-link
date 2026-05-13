@@ -81,4 +81,19 @@ public class GlobalExceptionHandler {
                 .status(status)
                 .body(error);
     }
+
+    @ExceptionHandler(LinkRevokedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleRevoked(
+            LinkRevokedException ex
+    ){
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                410,
+                "GONE",
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(error);
+    }
 }

@@ -2,14 +2,12 @@ package br.com.lucas.shortlink.services;
 
 import br.com.lucas.shortlink.entities.Link;
 import br.com.lucas.shortlink.entities.User;
-import br.com.lucas.shortlink.exceptions.LinkNotFoundException;
-import br.com.lucas.shortlink.exceptions.UserNotFoundException;
+import br.com.lucas.shortlink.exceptions.*;
 import br.com.lucas.shortlink.repositories.LinkRepository;
 import br.com.lucas.shortlink.repositories.UserRepository;
 import br.com.lucas.shortlink.utils.ShortCodeGenerator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import br.com.lucas.shortlink.exceptions.InvalidUrlException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -63,8 +61,15 @@ public class LinkService {
     }
 
     public Link findByShortCode(String shortCode){
-        return linkRepository.findByShortCode(shortCode)
+
+        Link link = linkRepository.findByShortCode(shortCode)
                 .orElseThrow(LinkNotFoundException::new);
+
+        if(link.isRevoked()){
+            throw new LinkRevokedException();
+        }
+
+        return link;
     }
 
     private void validateUrl(String url){
@@ -86,6 +91,20 @@ public class LinkService {
         } catch (URISyntaxException e){
             throw new InvalidUrlException("URL inválida");
         }
+    }
+
+    public void revokeLink(String shortCode, String userEmail){
+
+        Link link = linkRepository.findByShortCode(shortCode)
+                .orElseThrow(LinkNotFoundException::new);
+
+        if(!link.getUser().getEmail().equals(userEmail)){
+            throw new UnauthorizedException();
+        }
+
+        link.setRevoked(true);
+
+        linkRepository.save(link);
     }
 
 }

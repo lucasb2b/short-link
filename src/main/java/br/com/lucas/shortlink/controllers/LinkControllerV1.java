@@ -56,4 +56,17 @@ public class LinkControllerV1 {
                 .header("Location", link.getOriginalUrl())
                 .build();
     }
+
+    @PatchMapping("/links/{shortCode}/revoke")
+    public ResponseEntity<Void> revokeLink(
+            @PathVariable String shortCode,
+            Authentication authentication
+    ){
+
+        String email = authentication.getName();
+
+        linkService.revokeLink(shortCode, email);
+
+        return ResponseEntity.noContent().build();
+    }
 }
