@@ -1,0 +1,13 @@
+package br.com.lucas.shortlink.repositories;
+
+import br.com.lucas.shortlink.entities.EmailVerificationToken;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface EmailVerificationTokenRepository
+        extends JpaRepository<EmailVerificationToken, UUID> {
+
+    Optional<EmailVerificationToken> findByToken(String token);
+}
