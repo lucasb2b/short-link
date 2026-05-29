@@ -1,6 +1,7 @@
 package br.com.lucas.shortlink.controllers;
 
 import br.com.lucas.shortlink.dtos.request.LoginRequestDTO;
+import br.com.lucas.shortlink.dtos.request.ResetPasswordRequestDTO;
 import br.com.lucas.shortlink.dtos.response.LoginResponseDTO;
 import br.com.lucas.shortlink.dtos.request.RegisterRequestDTO;
 import br.com.lucas.shortlink.entities.EmailVerificationToken;
@@ -165,19 +166,46 @@ public class AuthControllerV1 {
         return ResponseEntity.ok("Email enviado");
     }
 
-    @PostMapping("/reset-password")
+    @GetMapping("/reset-password")
     public ResponseEntity<?> resetPassword(
-            @RequestParam String token,
-            @RequestParam String newPassword
+            @RequestParam String token
     ) {
 
         PasswordResetToken resetToken =
-                passwordResetTokenRepository.findByToken(token)
-                        .orElseThrow();
+                passwordResetTokenRepository
+                        .findByToken(token)
+                        .orElse(null);
 
-        if (resetToken.getExpiresAt()
-                .isBefore(LocalDateTime.now())) {
+        if(resetToken == null) {
+            return ResponseEntity.badRequest()
+                    .body("Token inválido");
+        }
 
+        if(resetToken.getExpiresAt()
+                .isBefore(LocalDateTime.now())){
+            return  ResponseEntity.badRequest()
+                    .body("Token expirado");
+        }
+
+        return ResponseEntity.ok("Token válido");
+
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(
+            @RequestBody ResetPasswordRequestDTO request
+            ){
+        PasswordResetToken resetToken =
+                passwordResetTokenRepository.findByToken(request.token())
+                        .orElse(null);
+
+        if (resetToken == null){
+            return ResponseEntity.badRequest()
+                    .body("Token inválido");
+        }
+
+        if(resetToken.getExpiresAt()
+                .isBefore(LocalDateTime.now())){
             return ResponseEntity.badRequest()
                     .body("Token expirado");
         }
@@ -185,10 +213,12 @@ public class AuthControllerV1 {
         User user = resetToken.getUser();
 
         user.setPassword(
-                passwordEncoder.encode(newPassword)
+                passwordEncoder.encode(request.newPassword())
         );
 
         userRepository.save(user);
+
+        passwordResetTokenRepository.delete(resetToken);
 
         return ResponseEntity.ok("Senha alterada");
     }
