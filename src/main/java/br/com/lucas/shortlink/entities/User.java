@@ -47,4 +47,8 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    public boolean isEmailVerified(){
+        return Boolean.TRUE.equals(this.emailVerified);
+    }
+
 }

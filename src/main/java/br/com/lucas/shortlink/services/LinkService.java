@@ -34,7 +34,7 @@ public class LinkService {
         validateUrl(originalUrl);
 
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(UserNotFoundException::new);
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado!"));
 
         String shortCode;
         boolean exists;
