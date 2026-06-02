@@ -47,6 +47,10 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
     public boolean isEmailVerified(){
         return Boolean.TRUE.equals(this.emailVerified);
     }

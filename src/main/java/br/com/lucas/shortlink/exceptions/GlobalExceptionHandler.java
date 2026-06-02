@@ -83,6 +83,11 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(InactiveUserException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInactiveUser(InactiveUserException ex) {
+        return buildError(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     private ResponseEntity<ErrorResponseDTO> buildError(HttpStatus status, String message) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 status.value(),

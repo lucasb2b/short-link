@@ -1,5 +1,6 @@
 package br.com.lucas.shortlink.controllers;
 
+import br.com.lucas.shortlink.dtos.request.ChangePasswordRequestDTO;
 import br.com.lucas.shortlink.dtos.request.LoginRequestDTO;
 import br.com.lucas.shortlink.dtos.request.RegisterRequestDTO;
 import br.com.lucas.shortlink.dtos.request.ResetPasswordRequestDTO;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/v1/auth")
@@ -52,6 +55,26 @@ public class AuthControllerV1 {
     public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
         authService.resetPassword(request);
         return ResponseEntity.ok("Senha alterada");
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<String> deleteAccount(Principal principal) {
+        String email = principal.getName();
+        authService.deactivateAccount(email);
+        return ResponseEntity.ok("Conta desativada com sucesso.");
+    }
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<String> changePassword(
+            Principal principal,
+            @Valid @RequestBody ChangePasswordRequestDTO request) {
+
+        // O principal.getName() retorna o "subject" do JWT (que você definiu como sendo o email)
+        String email = principal.getName();
+
+        authService.changePassword(email, request);
+
+        return ResponseEntity.ok("Senha alterada com sucesso.");
     }
 
 }

@@ -1,5 +1,6 @@
 package br.com.lucas.shortlink.services;
 
+import br.com.lucas.shortlink.dtos.request.ChangePasswordRequestDTO;
 import br.com.lucas.shortlink.dtos.request.LoginRequestDTO;
 import br.com.lucas.shortlink.dtos.request.RegisterRequestDTO;
 import br.com.lucas.shortlink.dtos.request.ResetPasswordRequestDTO;
@@ -82,7 +83,12 @@ public class AuthService {
             throw new EmailNotVerifiedException("E-mail não verificado. Confirme seu cadastro antes de fazer login.");
         }
 
+        if (!user.getActive()) {
+            throw new InactiveUserException("Conta desativada. Entre em contato com o suporte.");
+        }
+
         Authentication authentication;
+
         try {
             authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password())
@@ -173,4 +179,44 @@ public class AuthService {
         userRepository.save(user);
         passwordResetTokenRepository.delete(resetToken);
     }
+
+    @Transactional
+    public void deactivateAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+        user.setActive(false);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void reactivateAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+        user.setActive(true);
+        userRepository.save(user);
+    }
+
+    /**
+     * Altera a senha de um usuário autenticado.
+     * @throws UserNotFoundException se o usuário não for encontrado
+     * @throws InvalidCredentialsException se a senha atual estiver incorreta
+     */
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequestDTO request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("A senha atual está incorreta.");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException("A nova senha não pode ser igual à senha atual.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+
+        userRepository.save(user);
+    }
+
 }

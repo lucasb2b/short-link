@@ -35,8 +35,20 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/v1/auth/**").permitAll()
+                        // 1. Especificamos APENAS as rotas que não exigem o usuário estar logado
+                        .requestMatchers(
+                                "/v1/auth/login",
+                                "/v1/auth/register",
+                                "/v1/auth/verify-email",
+                                "/v1/auth/forgot-password",
+                                "/v1/auth/reset-password"
+                        ).permitAll()
+
+                        // 2. Libera a rota de redirecionamento do link curto
                         .requestMatchers(HttpMethod.GET, "/{shortCode}").permitAll()
+
+                        // 3. Qualquer outra requisição (incluindo o /change-password e o DELETE /account)
+                        // cairá obrigatoriamente nesta regra de proteção:
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
