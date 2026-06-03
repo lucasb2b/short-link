@@ -47,6 +47,10 @@ public class SecurityConfig {
                         // 2. Libera a rota de redirecionamento do link curto
                         .requestMatchers(HttpMethod.GET, "/{shortCode}").permitAll()
 
+                        .requestMatchers(HttpMethod.POST, "/v1/images").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/v1/images/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
                         // 3. Qualquer outra requisição (incluindo o /change-password e o DELETE /account)
                         // cairá obrigatoriamente nesta regra de proteção:
                         .anyRequest().authenticated()
