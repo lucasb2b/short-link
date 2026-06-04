@@ -7,6 +7,8 @@ import br.com.lucas.shortlink.repositories.LinkRepository;
 import br.com.lucas.shortlink.repositories.UserRepository;
 import br.com.lucas.shortlink.utils.ShortCodeGenerator;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -60,7 +62,8 @@ public class LinkService {
                 .orElse(null);
     }
 
-    public Link findByShortCode(String shortCode){
+
+    /*public Link findByShortCode(String shortCode){
 
         Link link = linkRepository.findByShortCode(shortCode)
                 .orElseThrow(LinkNotFoundException::new);
@@ -70,7 +73,7 @@ public class LinkService {
         }
 
         return link;
-    }
+    }*/
 
     private void validateUrl(String url){
         try{
@@ -93,6 +96,31 @@ public class LinkService {
         }
     }
 
+    /**
+     * @Cacheable verifica se existe a chave "links::shortCode" no Redis.
+     * Se existir, nem bate no banco de dados.
+     * Se não existir, executa o método e salva o retorno no Redis.
+     */
+    @Cacheable(value = "links", key = "#shortCode")
+    public Link findByShortCode(String shortCode){
+
+        Link link = linkRepository.findByShortCode(shortCode)
+                .orElseThrow(LinkNotFoundException::new);
+
+        if(link.isRevoked()){
+            throw new LinkRevokedException();
+        }
+
+        return link;
+    }
+
+
+
+    /**
+     * @CacheEvict limpa o cache do Redis para este link.
+     * Assim, garantimos que se o link for revogado, o cache é atualizado (removido) imediatamente.
+     */
+    @CacheEvict(value = "links", key = "#shortCode")
     public void revokeLink(String shortCode, String userEmail){
 
         Link link = linkRepository.findByShortCode(shortCode)
