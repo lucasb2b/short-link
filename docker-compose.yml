@@ -24,8 +24,38 @@ services:
     networks:
       - app-network
 
+  # --- NOVO: Serviço do Redis (Cache) ---
+  redis:
+    image: redis:alpine
+    container_name: redis-shortlink
+    restart: always
+    ports:
+      - "6379:6379" # Porta padrão do Redis para comunicação com o Spring
+    volumes:
+      - redis_data:/data # Persistência: O cache não se perde se o container reiniciar
+    networks:
+      - app-network
+
+  # --- NOVO: Serviço do RabbitMQ (Mensageria) ---
+  rabbitmq:
+    image: rabbitmq:3-management-alpine # A versão 'management' inclui o painel web UI
+    container_name: rabbitmq-shortlink
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # Porta AMQP: Usada pelo Spring Boot para enviar/receber mensagens
+      - "15672:15672" # Porta HTTP: Usada para acessar o Painel Web (Navegador)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq # Persistência: Impede a perda de filas e mensagens
+    networks:
+      - app-network
+
 volumes:
   postgres_data:
+  redis_data:      # Declarando o novo volume do Redis
+  rabbitmq_data:   # Declarando o novo volume do RabbitMQ
 
 networks:
   app-network:
