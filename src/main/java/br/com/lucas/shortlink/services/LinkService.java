@@ -10,6 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -62,18 +66,6 @@ public class LinkService {
                 .orElse(null);
     }
 
-
-    /*public Link findByShortCode(String shortCode){
-
-        Link link = linkRepository.findByShortCode(shortCode)
-                .orElseThrow(LinkNotFoundException::new);
-
-        if(link.isRevoked()){
-            throw new LinkRevokedException();
-        }
-
-        return link;
-    }*/
 
     private void validateUrl(String url){
         try{
@@ -133,6 +125,12 @@ public class LinkService {
         link.setRevoked(true);
 
         linkRepository.save(link);
+    }
+
+    public Page<Link> getUserLinks(String userEmail, int page) {
+        // Cria a paginação: página atual, tamanho 10, ordenado do mais recente para o mais antigo
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return linkRepository.findByUserEmail(userEmail, pageable);
     }
 
 }

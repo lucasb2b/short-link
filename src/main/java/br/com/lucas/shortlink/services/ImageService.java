@@ -23,6 +23,10 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -153,5 +157,11 @@ public class ImageService {
 
     private String generateUniqueShortCode() {
         return UUID.randomUUID().toString().substring(0, 6);
+    }
+
+    public Page<Image> getUserImages(String email, int page) {
+        // Cria a paginação: página atual, tamanho 10, ordenado do mais recente para o mais antigo
+        Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return imageRepository.findByUserEmail(email, pageable);
     }
 }
