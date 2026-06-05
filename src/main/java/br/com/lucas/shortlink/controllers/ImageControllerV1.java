@@ -13,6 +13,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.security.Principal;
 import java.util.List;
@@ -83,5 +88,18 @@ public class ImageControllerV1 {
                 image.getExpiresAt(),
                 image.getUser() == null
         );
+    }
+
+
+    @GetMapping
+    public ResponseEntity<Page<Image>> getUserImages(
+            @RequestParam(defaultValue = "0") int page,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        Page<Image> imagesPage = imageService.getUserImages(email, page);
+
+        return ResponseEntity.ok(imagesPage);
     }
 }

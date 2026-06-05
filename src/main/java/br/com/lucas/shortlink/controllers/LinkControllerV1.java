@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping
@@ -82,5 +83,25 @@ public class LinkControllerV1 {
             return xf.split(",")[0];
         }
         return request.getRemoteAddr();
+    }
+
+    @GetMapping("/links")
+    public ResponseEntity<Page<LinkResponseDTO>> getUserLinks(
+            @RequestParam(defaultValue = "0") int page, // Pega o param ?page=0 da URL
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        // Busca os links paginados
+        Page<Link> linksPage = linkService.getUserLinks(email, page);
+
+        // Converte a Page de Entidades para uma Page de DTOs para não vazar dados sensíveis
+        Page<LinkResponseDTO> responsePage = linksPage.map(link -> new LinkResponseDTO(
+                link.getOriginalUrl(),
+                link.getShortCode(),
+                link.getShortUrl()
+        ));
+
+        return ResponseEntity.ok(responsePage);
     }
 }
