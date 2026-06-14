@@ -1,80 +1,99 @@
 package br.com.lucas.shortlink.controllers;
 
-import br.com.lucas.shortlink.dtos.request.ChangePasswordRequestDTO;
-import br.com.lucas.shortlink.dtos.request.LoginRequestDTO;
-import br.com.lucas.shortlink.dtos.request.RegisterRequestDTO;
-import br.com.lucas.shortlink.dtos.request.ResetPasswordRequestDTO;
+import br.com.lucas.shortlink.dtos.request.*;
+import br.com.lucas.shortlink.dtos.response.ErrorResponseDTO;
 import br.com.lucas.shortlink.dtos.response.LoginResponseDTO;
 import br.com.lucas.shortlink.services.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import java.security.Principal;
 
 @RestController
 @RequestMapping("/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Endpoints de autenticação e gerenciamento de conta")
 public class AuthControllerV1 {
 
     private final AuthService authService;
 
+    @PostMapping("/register")
+    @Operation(summary = "Registrar novo usuário",
+            description = "Cria a conta e envia e-mail de verificação (válido por 24h).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Usuário criado"),
+            @ApiResponse(responseCode = "409", description = "E-mail já cadastrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequestDTO request) {
+        authService.register(request);
+        return ResponseEntity.status(201).build();
+    }
+
     @PostMapping("/login")
+    @Operation(summary = "Autenticar usuário", description = "Retorna um token JWT.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Login bem-sucedido",
+                    content = @Content(schema = @Schema(implementation = LoginResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Credenciais inválidas",
+                    content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "E-mail não verificado ou conta inativa",
+                    content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         String token = authService.login(request);
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequestDTO request) {
-        authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
-
     @GetMapping("/verify-email")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+    @Operation(summary = "Confirmar e-mail", description = "Valida o token enviado por e-mail.")
+    public ResponseEntity<Void> verifyEmail(
+            @Parameter(description = "Token enviado por e-mail", required = true)
+            @RequestParam String token) {
         authService.verifyEmail(token);
-        return ResponseEntity.ok("Email confirmado");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+    @Operation(summary = "Solicitar reset de senha",
+            description = "Envia e-mail com link de reset (válido por 30 minutos).")
+    public ResponseEntity<Void> forgotPassword(@RequestParam String email) {
         authService.forgotPassword(email);
-        return ResponseEntity.ok("Email enviado");
-    }
-
-    @GetMapping("/reset-password")
-    public ResponseEntity<String> validateResetToken(@RequestParam String token) {
-        authService.validateResetToken(token);
-        return ResponseEntity.ok("Token válido");
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
+    @Operation(summary = "Efetivar reset de senha")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequestDTO request) {
         authService.resetPassword(request);
-        return ResponseEntity.ok("Senha alterada");
-    }
-
-    @DeleteMapping("/account")
-    public ResponseEntity<String> deleteAccount(Principal principal) {
-        String email = principal.getName();
-        authService.deactivateAccount(email);
-        return ResponseEntity.ok("Conta desativada com sucesso.");
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/change-password")
-    public ResponseEntity<String> changePassword(
-            Principal principal,
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Alterar senha (autenticado)")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ChangePasswordRequestDTO request) {
-
-        // O principal.getName() retorna o "subject" do JWT (que você definiu como sendo o email)
-        String email = principal.getName();
-
-        authService.changePassword(email, request);
-
-        return ResponseEntity.ok("Senha alterada com sucesso.");
+        authService.changePassword(userDetails.getUsername(), request);
+        return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/deactivate")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Desativar conta")
+    public ResponseEntity<Void> deactivate(@AuthenticationPrincipal UserDetails userDetails) {
+        authService.deactivateAccount(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 }

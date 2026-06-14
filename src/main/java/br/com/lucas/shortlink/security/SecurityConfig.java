@@ -41,7 +41,11 @@ public class SecurityConfig {
                                 "/v1/auth/register",
                                 "/v1/auth/verify-email",
                                 "/v1/auth/forgot-password",
-                                "/v1/auth/reset-password"
+                                "/v1/auth/reset-password",
+                                "/v1/auth/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
 
                         // 2. Libera a rota de redirecionamento do link curto

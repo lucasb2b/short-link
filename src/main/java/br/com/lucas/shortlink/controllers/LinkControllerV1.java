@@ -6,15 +6,24 @@ import br.com.lucas.shortlink.dtos.response.LinkResponseDTO;
 import br.com.lucas.shortlink.entities.Link;
 import br.com.lucas.shortlink.services.AnalyticsProducer;
 import br.com.lucas.shortlink.services.LinkService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.data.domain.Page;
 
 @RestController
 @RequestMapping
+@Tag(name = "Links", description = "Encurtamento, redirecionamento e gerenciamento de links")
 public class LinkControllerV1 {
 
     private final LinkService linkService;
@@ -29,7 +38,17 @@ public class LinkControllerV1 {
     }
 
     @PostMapping("/links")
-    public ResponseEntity<LinkResponseDTO> shorten(@Valid @RequestBody LinkRequestDTO linkRequestDTO, Authentication authentication){
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Encurtar URL", description = "Cria um link curto para a URL fornecida. Requer autenticação.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Link encurtado com sucesso",
+                    content = @Content(schema = @Schema(implementation = LinkResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "URL inválida"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado")
+    })
+    public ResponseEntity<LinkResponseDTO> shorten(
+            @Valid @RequestBody LinkRequestDTO linkRequestDTO,
+            Authentication authentication){
         String email = authentication.getName();
 
         Link newLink = linkService.createShortLink(linkRequestDTO.originalUrl(), email);
@@ -44,7 +63,14 @@ public class LinkControllerV1 {
     }
 
     @GetMapping("/{shortCode}")
+    @Operation(summary = "Redirecionar para URL original",
+            description = "Acessa um link curto, registra o clique e redireciona para a URL original.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "302", description = "Redirecionamento para a URL original"),
+            @ApiResponse(responseCode = "404", description = "Link não encontrado")
+    })
     public ResponseEntity<Void> redirect(
+            @Parameter(description = "Código curto do link", required = true)
             @PathVariable String shortCode,
             HttpServletRequest request
     ){
@@ -67,7 +93,15 @@ public class LinkControllerV1 {
     }
 
     @PatchMapping("/links/{shortCode}/revoke")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Revogar link", description = "Revoga um link encurtado, impedindo novos acessos. Requer autenticação.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Link revogado com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Não autorizado a revogar este link"),
+            @ApiResponse(responseCode = "404", description = "Link não encontrado")
+    })
     public ResponseEntity<Void> revokeLink(
+            @Parameter(description = "Código curto do link a ser revogado", required = true)
             @PathVariable String shortCode,
             Authentication authentication
     ){
@@ -86,8 +120,14 @@ public class LinkControllerV1 {
     }
 
     @GetMapping("/links")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Listar links do usuário", description = "Retorna uma página com os links encurtados pelo usuário autenticado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de links do usuário")
+    })
     public ResponseEntity<Page<LinkResponseDTO>> getUserLinks(
-            @RequestParam(defaultValue = "0") int page, // Pega o param ?page=0 da URL
+            @Parameter(description = "Número da página (zero-based)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
             Authentication authentication
     ) {
         String email = authentication.getName();

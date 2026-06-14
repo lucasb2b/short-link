@@ -1,10 +1,9 @@
 package br.com.lucas.shortlink.dtos.request;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "Credenciais para autenticação")
 public record LoginRequestDTO(
-        @NotBlank @Email String email,
-        @NotBlank String password
-) {
-}
+        @Schema(example = "lucas@email.com") String email,
+        @Schema(example = "Senha@123")        String password
+) {}
