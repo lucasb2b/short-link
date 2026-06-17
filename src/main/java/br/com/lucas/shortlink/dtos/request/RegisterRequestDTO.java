@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 
 @Schema(description = "Dados necessários para registrar um novo usuário")
 public record RegisterRequestDTO(
+        @Schema(description = "Nome completo do usuário", example = "Lucas Brito", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotBlank
+        String name,
 
         @Schema(description = "E-mail único do usuário", example = "lucas@email.com", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank @Email

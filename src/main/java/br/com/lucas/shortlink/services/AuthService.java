@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -48,6 +50,7 @@ public class AuthService {
         }
 
         User user = User.builder()
+                .name(request.name())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .emailVerified(false)
@@ -97,8 +100,11 @@ public class AuthService {
             throw new InvalidCredentialsException("Credenciais inválidas");
         }
 
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("name", user.getName());
+
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return jwtService.generateToken(userDetails);
+        return jwtService.generateToken(extraClaims, userDetails);
     }
 
     /**
