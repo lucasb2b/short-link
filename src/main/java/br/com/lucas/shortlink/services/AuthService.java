@@ -1,9 +1,6 @@
 package br.com.lucas.shortlink.services;
 
-import br.com.lucas.shortlink.dtos.request.ChangePasswordRequestDTO;
-import br.com.lucas.shortlink.dtos.request.LoginRequestDTO;
-import br.com.lucas.shortlink.dtos.request.RegisterRequestDTO;
-import br.com.lucas.shortlink.dtos.request.ResetPasswordRequestDTO;
+import br.com.lucas.shortlink.dtos.request.*;
 import br.com.lucas.shortlink.entities.EmailVerificationToken;
 import br.com.lucas.shortlink.entities.PasswordResetToken;
 import br.com.lucas.shortlink.entities.User;
@@ -184,6 +181,20 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
         passwordResetTokenRepository.delete(resetToken);
+    }
+
+    @Transactional
+    public void updateProfile(String email, UpdateProfileRequestDTO request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado"));
+        if (request.name() != null && !request.name().isBlank()) {
+            user.setName(request.name());
+        }
+        if (request.avatarUrl() != null) {
+            // Se quiser salvar avatar no banco, adicione o campo na entidade User
+            // user.setAvatarUrl(request.avatarUrl());
+        }
+        userRepository.save(user);
     }
 
     @Transactional

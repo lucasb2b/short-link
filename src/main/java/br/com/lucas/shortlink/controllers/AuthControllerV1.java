@@ -89,6 +89,16 @@ public class AuthControllerV1 {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/profile")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Atualizar perfil do usuário")
+    public ResponseEntity<Void> updateProfile(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody UpdateProfileRequestDTO request) {
+        authService.updateProfile(userDetails.getUsername(), request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/deactivate")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Desativar conta")
