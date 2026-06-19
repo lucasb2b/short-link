@@ -92,6 +92,25 @@ public class LinkControllerV1 {
                 .build();
     }
 
+    @GetMapping("/links/{shortCode}")
+    @Operation(summary = "Obter detalhes do link", description = "Retorna os dados do link encurtado sem redirecionar.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Detalhes do link"),
+            @ApiResponse(responseCode = "404", description = "Link não encontrado")
+    })
+    public ResponseEntity<LinkResponseDTO> getLinkInfo(
+            @Parameter(description = "Código curto do link", required = true)
+            @PathVariable String shortCode
+    ) {
+        Link link = linkService.findByShortCode(shortCode); // usa o mesmo método que já valida revogação
+        LinkResponseDTO response = new LinkResponseDTO(
+                link.getOriginalUrl(),
+                link.getShortCode(),
+                link.getShortUrl()
+        );
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/links/{shortCode}/revoke")
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Revogar link", description = "Revoga um link encurtado, impedindo novos acessos. Requer autenticação.")
