@@ -55,8 +55,8 @@ public class LinkControllerV1 {
 
         LinkResponseDTO response = new LinkResponseDTO(
                 newLink.getOriginalUrl(),
-                newLink.getShortCode(),
-                newLink.getShortUrl()
+                newLink.getShortUrl(),
+                newLink.getShortCode()
         );
 
         return ResponseEntity.ok(response);
@@ -105,8 +105,8 @@ public class LinkControllerV1 {
         Link link = linkService.findByShortCode(shortCode); // usa o mesmo método que já valida revogação
         LinkResponseDTO response = new LinkResponseDTO(
                 link.getOriginalUrl(),
-                link.getShortCode(),
-                link.getShortUrl()
+                link.getShortUrl(),
+                link.getShortCode()
         );
         return ResponseEntity.ok(response);
     }
@@ -157,8 +157,8 @@ public class LinkControllerV1 {
         // Converte a Page de Entidades para uma Page de DTOs para não vazar dados sensíveis
         Page<LinkResponseDTO> responsePage = linksPage.map(link -> new LinkResponseDTO(
                 link.getOriginalUrl(),
-                link.getShortCode(),
-                link.getShortUrl()
+                link.getShortUrl(),
+                link.getShortCode()
         ));
 
         return ResponseEntity.ok(responsePage);

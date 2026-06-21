@@ -51,7 +51,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // 2. Libera a rota de redirecionamento do link curto
-                        .requestMatchers(HttpMethod.GET, "/{shortCode}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/{shortCode}", "/links/{shortCode}").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/v1/images").permitAll()
                         .requestMatchers(HttpMethod.GET, "/v1/images/**").permitAll()
