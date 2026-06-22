@@ -16,8 +16,10 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(
-                List.of("http://localhost:3000")
+        // 🚨 MUDE PARA: setAllowedOriginPatterns
+        // Isso permite qualquer IP (coringa "*") mesmo com Credentials = true
+        configuration.setAllowedOriginPatterns(
+                List.of("*")
         );
 
         configuration.setAllowedMethods(
@@ -41,3 +43,4 @@ public class CorsConfig {
         return source;
     }
 }
+

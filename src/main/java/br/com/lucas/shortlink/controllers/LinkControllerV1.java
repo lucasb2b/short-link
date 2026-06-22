@@ -2,9 +2,12 @@ package br.com.lucas.shortlink.controllers;
 
 import br.com.lucas.shortlink.dtos.request.ClickEventDTO;
 import br.com.lucas.shortlink.dtos.request.LinkRequestDTO;
+import br.com.lucas.shortlink.dtos.response.AnalyticsResponseDTO;
 import br.com.lucas.shortlink.dtos.response.LinkResponseDTO;
+import br.com.lucas.shortlink.entities.Analytics;
 import br.com.lucas.shortlink.entities.Link;
 import br.com.lucas.shortlink.services.AnalyticsProducer;
+import br.com.lucas.shortlink.repositories.AnalyticsRepository;
 import br.com.lucas.shortlink.services.LinkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,6 +24,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping
 @Tag(name = "Links", description = "Encurtamento, redirecionamento e gerenciamento de links")
@@ -28,13 +35,16 @@ public class LinkControllerV1 {
 
     private final LinkService linkService;
     private final AnalyticsProducer analyticsProducer; // Substituímos o AnalyticsService pelo Producer
+    private final AnalyticsRepository analyticsRepository;
 
     public LinkControllerV1(
             LinkService linkService,
-            AnalyticsProducer analyticsProducer
+            AnalyticsProducer analyticsProducer,
+            AnalyticsRepository analyticsRepository
     ){
         this.linkService = linkService;
         this.analyticsProducer = analyticsProducer;
+        this.analyticsRepository = analyticsRepository;
     }
 
     @PostMapping("/links")
@@ -60,6 +70,60 @@ public class LinkControllerV1 {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/links/{shortCode}/analytics")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Obter Analytics do Link", description = "Retorna os dados estatísticos detalhados de cliques do link. Requer autenticação.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Dados de analytics retornados com sucesso"),
+            @ApiResponse(responseCode = "403", description = "Acesso negado"),
+            @ApiResponse(responseCode = "404", description = "Link não encontrado")
+    })
+    public ResponseEntity<AnalyticsResponseDTO> getLinkAnalytics(
+            @Parameter(description = "Código curto do link", required = true)
+            @PathVariable String shortCode,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+        // Valida se o link existe e pertence ao usuário (reutilizando a lógica do service)
+        Link link = linkService.findByShortCode(shortCode);
+        if (!link.getUser().getEmail().equals(email)) {
+            return ResponseEntity.status(403).build(); // 403 Forbidden
+        }
+        // Busca todas as métricas desse link
+        List<Analytics> analyticsList = analyticsRepository.findAllByLink(link);
+        long totalClicks = analyticsList.size();
+        // Agrupa pela quantidade de ocorrências
+        Map<String, Long> browsers = analyticsList.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getBrowser() != null ? a.getBrowser() : "Outros",
+                        Collectors.counting()
+                ));
+        Map<String, Long> operatingSystems = analyticsList.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getOperatingSystem() != null ? a.getOperatingSystem() : "Outros",
+                        Collectors.counting()
+                ));
+        Map<String, Long> deviceTypes = analyticsList.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getDeviceType() != null ? a.getDeviceType() : "Outros",
+                        Collectors.counting()
+                ));
+        Map<String, Long> countries = analyticsList.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getCountry() != null ? a.getCountry() : "Outros",
+                        Collectors.counting()
+                ));
+        // Monta o DTO final e retorna
+        AnalyticsResponseDTO responseDTO = new AnalyticsResponseDTO(
+                totalClicks,
+                browsers,
+                operatingSystems,
+                deviceTypes,
+                countries
+        );
+        return ResponseEntity.ok(responseDTO);
     }
 
     @GetMapping("/{shortCode}")
