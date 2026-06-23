@@ -130,7 +130,7 @@ public class LinkService {
     public Page<Link> getUserLinks(String userEmail, int page) {
         // Cria a paginação: página atual, tamanho 10, ordenado do mais recente para o mais antigo
         Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return linkRepository.findByUserEmail(userEmail, pageable);
+        return linkRepository.findByUserEmailAndRevokedFalse(userEmail, pageable);
     }
 
 }
