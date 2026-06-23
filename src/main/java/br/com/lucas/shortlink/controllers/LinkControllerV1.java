@@ -66,7 +66,9 @@ public class LinkControllerV1 {
         LinkResponseDTO response = new LinkResponseDTO(
                 newLink.getOriginalUrl(),
                 newLink.getShortUrl(),
-                newLink.getShortCode()
+                newLink.getShortCode(),
+                newLink.getClicks(),
+                newLink.getCreatedAt()
         );
 
         return ResponseEntity.ok(response);
@@ -166,11 +168,13 @@ public class LinkControllerV1 {
             @Parameter(description = "Código curto do link", required = true)
             @PathVariable String shortCode
     ) {
-        Link link = linkService.findByShortCode(shortCode); // usa o mesmo método que já valida revogação
+        Link link = linkService.findByShortCode(shortCode);
         LinkResponseDTO response = new LinkResponseDTO(
                 link.getOriginalUrl(),
                 link.getShortUrl(),
-                link.getShortCode()
+                link.getShortCode(),
+                link.getClicks(),     // ⬅️ Passando os cliques!
+                link.getCreatedAt()   // ⬅️ Passando a data!
         );
         return ResponseEntity.ok(response);
     }
@@ -214,17 +218,14 @@ public class LinkControllerV1 {
             Authentication authentication
     ) {
         String email = authentication.getName();
-
-        // Busca os links paginados
         Page<Link> linksPage = linkService.getUserLinks(email, page);
-
-        // Converte a Page de Entidades para uma Page de DTOs para não vazar dados sensíveis
         Page<LinkResponseDTO> responsePage = linksPage.map(link -> new LinkResponseDTO(
                 link.getOriginalUrl(),
                 link.getShortUrl(),
-                link.getShortCode()
+                link.getShortCode(),
+                link.getClicks(),     // ⬅️ Passando os cliques!
+                link.getCreatedAt()   // ⬅️ Passando a data!
         ));
-
         return ResponseEntity.ok(responsePage);
     }
 }

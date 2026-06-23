@@ -50,4 +50,11 @@ public class Link {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public long getClicks() {
+        if (this.analytics == null) {
+            return 0;
+        }
+        return this.analytics.size();
+    }
 }
