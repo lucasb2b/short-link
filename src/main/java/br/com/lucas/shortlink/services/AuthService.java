@@ -10,6 +10,7 @@ import br.com.lucas.shortlink.repositories.PasswordResetTokenRepository;
 import br.com.lucas.shortlink.repositories.UserRepository;
 import br.com.lucas.shortlink.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -35,6 +36,9 @@ public class AuthService {
     private final EmailService emailService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Value("${app.base-url}")
+    private String frontendUrl;
 
     /**
      * Registra um novo usuário e envia e-mail de verificação.
@@ -62,11 +66,11 @@ public class AuthService {
                 .build();
         emailVerificationTokenRepository.save(verificationToken);
 
-        String link = "http://localhost:8080/v1/auth/verify-email?token=" + token;
+        String link = frontendUrl + "/verify-email?token=" + token;
         emailService.sendEmail(
                 user.getEmail(),
                 "Confirme sua conta",
-                "Clique no link:\n" + link
+                "Clique no link para ativar sua conta:\n" + link
         );
     }
 
@@ -141,11 +145,11 @@ public class AuthService {
                 .build();
         passwordResetTokenRepository.save(resetToken);
 
-        String link = "http://localhost:8080/v1/auth/reset-password?token=" + token;
+        String link = frontendUrl + "/reset-password?token=" + token;
         emailService.sendEmail(
                 user.getEmail(),
                 "Recuperação de senha",
-                "Clique no link:\n" + link
+                "Clique no link para redefinir sua senha:\n" + link
         );
     }
 
