@@ -124,7 +124,9 @@ public class ImageControllerV1 {
                 directFileUrl,
                 image.getTags(),
                 image.getExpiresAt(),
-                image.getUser() == null
+                image.getUser() == null,
+                image.getFileSize(),
+                image.getCreatedAt()
         );
     }
 

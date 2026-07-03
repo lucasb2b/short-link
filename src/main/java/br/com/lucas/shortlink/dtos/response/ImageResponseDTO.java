@@ -26,5 +26,11 @@ public record ImageResponseDTO(
         LocalDateTime expiresAt,
 
         @Schema(description = "Indica se o upload foi anônimo (true → link expira)", example = "true")
-        boolean isAnonymous
+        boolean isAnonymous,
+
+        @Schema(description = "Tamanho do arquivo em bytes", example = "1048576")
+        Long size,
+
+        @Schema(description = "Data e hora de criação", example = "2025-12-31T23:59:59")
+        LocalDateTime createdAt
 ) {}
