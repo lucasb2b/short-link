@@ -134,7 +134,7 @@ public class ImageControllerV1 {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Página de imagens do usuário")
     })
-    public ResponseEntity<Page<Image>> getUserImages(
+    public ResponseEntity<Page<ImageResponseDTO>> getUserImages(
             @Parameter(description = "Número da página (zero-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
             Authentication authentication
@@ -142,7 +142,8 @@ public class ImageControllerV1 {
         String email = authentication.getName();
 
         Page<Image> imagesPage = imageService.getUserImages(email, page);
+        Page<ImageResponseDTO> responsePage = imagesPage.map(this::buildResponseDTO);
 
-        return ResponseEntity.ok(imagesPage);
+        return ResponseEntity.ok(responsePage);
     }
 }
