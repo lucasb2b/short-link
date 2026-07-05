@@ -28,6 +28,9 @@ public record ImageResponseDTO(
         @Schema(description = "Indica se o upload foi anônimo (true → link expira)", example = "true")
         boolean isAnonymous,
 
+        @Schema(description = "Indica se a imagem é privada", example = "false")
+        boolean isPrivate,
+
         @Schema(description = "Tamanho do arquivo em bytes", example = "1048576")
         Long size,
 

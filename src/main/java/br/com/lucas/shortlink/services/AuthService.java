@@ -17,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
@@ -81,6 +83,7 @@ public class AuthService {
      * @throws InvalidCredentialsException se credenciais inválidas
      * @throws EmailNotVerifiedException se o e-mail não foi verificado
      */
+    @Transactional(readOnly = true)
     public LoginResponseDTO login(LoginRequestDTO request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Credenciais inválidas"));
@@ -115,20 +118,23 @@ public class AuthService {
     /**
      * Gera novos tokens a partir de um refreshToken válido.
      */
+    @Transactional(readOnly = true)
     public LoginResponseDTO refreshToken(String refreshToken) {
         String userEmail = jwtService.extractUsername(refreshToken);
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new InvalidCredentialsException("Usuário não encontrado."));
 
-        if (!jwtService.isTokenValid(refreshToken, user)) {
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
+
+        if (!jwtService.isTokenValid(refreshToken, userDetails)) {
             throw new InvalidCredentialsException("Refresh token inválido ou expirado.");
         }
 
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("name", user.getName());
 
-        String newToken = jwtService.generateToken(extraClaims, user);
-        String newRefreshToken = jwtService.generateRefreshToken(user);
+        String newToken = jwtService.generateToken(extraClaims, userDetails);
+        String newRefreshToken = jwtService.generateRefreshToken(userDetails);
 
         return new LoginResponseDTO(newToken, newRefreshToken);
     }

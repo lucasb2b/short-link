@@ -46,11 +46,13 @@ public class ImageControllerV1 {
             @RequestPart("file") MultipartFile file,
             @Parameter(description = "Lista de tags (opcional)", required = false)
             @RequestParam(value = "tags", required = false) List<String> tags,
+            @Parameter(description = "Define se a imagem é privada", required = false)
+            @RequestParam(value = "isPrivate", required = false, defaultValue = "false") boolean isPrivate,
             Principal principal
     ) {
         String email = principal != null ? principal.getName() : null;
 
-        Image savedImage = imageService.uploadImage(file, tags, email);
+        Image savedImage = imageService.uploadImage(file, tags, email, isPrivate);
 
         ImageResponseDTO response = buildResponseDTO(savedImage);
 
@@ -66,8 +68,10 @@ public class ImageControllerV1 {
     })
     public ResponseEntity<ImageResponseDTO> getImageDetails(
             @Parameter(description = "Código curto da imagem", required = true)
-            @PathVariable String shortCode) {
-        Image image = imageService.findByShortCode(shortCode);
+            @PathVariable String shortCode,
+            Principal principal) {
+        String email = principal != null ? principal.getName() : null;
+        Image image = imageService.findByShortCode(shortCode, email);
         return ResponseEntity.ok(buildResponseDTO(image));
     }
 
@@ -111,11 +115,10 @@ public class ImageControllerV1 {
 
     // Método auxiliar para construir o DTO com as URLs dinâmicas baseadas no ambiente
     private ImageResponseDTO buildResponseDTO(Image image) {
-        // Pega a URL base atual (ex: http://localhost:8080)
         String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
 
-        String shortUrl = baseUrl + "/i/" + image.getShortCode(); // Rota de visualização que você fará no Next.js
-        String directFileUrl = baseUrl + "/uploads/" + image.getStorageUrl(); // Rota direta para a imagem física
+        String shortUrl = baseUrl + "/i/" + image.getShortCode();
+        String directFileUrl = baseUrl + "/uploads/" + image.getStorageUrl();
 
         return new ImageResponseDTO(
                 image.getOriginalFilename(),
@@ -125,9 +128,28 @@ public class ImageControllerV1 {
                 image.getTags(),
                 image.getExpiresAt(),
                 image.getUser() == null,
+                image.isPrivate(),
                 image.getFileSize(),
                 image.getCreatedAt()
         );
+    }
+
+    @PatchMapping("/{shortCode}/visibility")
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(summary = "Alternar visibilidade", description = "Alterna entre público e privado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Visibilidade alterada",
+                    content = @Content(schema = @Schema(implementation = ImageResponseDTO.class))),
+            @ApiResponse(responseCode = "403", description = "Sem permissão"),
+            @ApiResponse(responseCode = "404", description = "Imagem não encontrada")
+    })
+    public ResponseEntity<ImageResponseDTO> toggleVisibility(
+            @Parameter(description = "Código curto da imagem", required = true)
+            @PathVariable String shortCode,
+            Principal principal) {
+        String email = principal.getName();
+        Image updated = imageService.toggleVisibility(shortCode, email);
+        return ResponseEntity.ok(buildResponseDTO(updated));
     }
 
     @GetMapping

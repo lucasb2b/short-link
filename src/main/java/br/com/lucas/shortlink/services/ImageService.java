@@ -55,7 +55,7 @@ public class ImageService {
     }
 
     @Transactional
-    public Image uploadImage(MultipartFile file, List<String> tags, String email) {
+    public Image uploadImage(MultipartFile file, List<String> tags, String email, boolean isPrivate) {
         validateFile(file);
 
         User user = null;
@@ -76,10 +76,11 @@ public class ImageService {
                 .originalFilename(file.getOriginalFilename())
                 .contentType(file.getContentType())
                 .fileSize(file.getSize())
-                .storageUrl(fileName) // Guardamos apenas o nome do arquivo no banco (ex: a1b2c3_foto.png)
+                .storageUrl(fileName)
                 .shortCode(shortCode)
                 .expiresAt(expiresAt)
                 .user(user)
+                .isPrivate(isPrivate)
                 .tags(tags != null ? tags : List.of())
                 .build();
 
@@ -87,6 +88,10 @@ public class ImageService {
     }
 
     public Image findByShortCode(String shortCode) {
+        return findByShortCode(shortCode, null);
+    }
+
+    public Image findByShortCode(String shortCode, String requesterEmail) {
         Image image = imageRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Imagem não encontrada"));
 
@@ -94,11 +99,34 @@ public class ImageService {
             throw new ResourceNotFoundException("Esta imagem expirou e não está mais disponível.");
         }
 
+        // Se a imagem é privada, só o dono pode visualizá-la
+        if (image.isPrivate()) {
+            boolean isOwner = requesterEmail != null
+                    && image.getUser() != null
+                    && image.getUser().getEmail().equals(requesterEmail);
+            if (!isOwner) {
+                throw new ResourceNotFoundException("Imagem não encontrada");
+            }
+        }
+
         return image;
     }
 
     public Page<Image> searchByTag(String tag, Pageable pageable) {
         return imageRepository.findByTag(tag, pageable);
+    }
+
+    @Transactional
+    public Image toggleVisibility(String shortCode, String email) {
+        Image image = imageRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Imagem não encontrada"));
+
+        if (image.getUser() == null || !image.getUser().getEmail().equals(email)) {
+            throw new org.springframework.security.access.AccessDeniedException("Você não tem permissão para alterar esta imagem.");
+        }
+
+        image.setPrivate(!image.isPrivate());
+        return imageRepository.save(image);
     }
 
     @Transactional

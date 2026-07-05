@@ -48,6 +48,10 @@ public class Image {
     private User user;
 
     // ElementCollection cria uma tabela dependente para armazenar a lista de strings
+    @Builder.Default
+    @Column(name = "is_private", nullable = false)
+    private boolean isPrivate = false;
+
     @ElementCollection
     @CollectionTable(name = "TB_IMAGE_TAGS", joinColumns = @JoinColumn(name = "image_id"))
     @Column(name = "tag")
