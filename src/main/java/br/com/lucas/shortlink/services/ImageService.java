@@ -159,8 +159,16 @@ public class ImageService {
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new InvalidFileException("O arquivo excede o limite de 5MB.");
         }
-        if (!ALLOWED_TYPES.contains(file.getContentType())) {
-            throw new InvalidFileException("Tipo de arquivo não suportado. Apenas JPEG, PNG, GIF e WEBP.");
+        
+        try {
+            org.apache.tika.Tika tika = new org.apache.tika.Tika();
+            String detectedType = tika.detect(file.getInputStream());
+            
+            if (!ALLOWED_TYPES.contains(detectedType)) {
+                throw new InvalidFileException("Tipo de arquivo não suportado. O arquivo real detectado foi: " + detectedType);
+            }
+        } catch (java.io.IOException e) {
+            throw new InvalidFileException("Erro ao processar arquivo de imagem para validação.");
         }
     }
 
