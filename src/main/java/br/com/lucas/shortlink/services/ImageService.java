@@ -11,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,9 +28,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ImageService {
 
     private final ImageRepository imageRepository;
@@ -163,5 +166,26 @@ public class ImageService {
         // Cria a paginação: página atual, tamanho 10, ordenado do mais recente para o mais antigo
         Pageable pageable = PageRequest.of(page, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
         return imageRepository.findByUserEmail(email, pageable);
+    }
+
+    // Roda todo dia à meia noite
+    @Scheduled(cron = "0 0 0 * * ?")
+    @Transactional
+    public void cleanupExpiredImages() {
+        log.info("Iniciando rotina de limpeza de imagens expiradas...");
+        List<Image> expiredImages = imageRepository.findAllByExpiresAtBefore(LocalDateTime.now());
+        
+        int deletedCount = 0;
+        for (Image image : expiredImages) {
+            try {
+                Path filePath = uploadDir.resolve(image.getStorageUrl());
+                Files.deleteIfExists(filePath);
+                imageRepository.delete(image);
+                deletedCount++;
+            } catch (IOException e) {
+                log.error("Erro ao deletar o arquivo físico da imagem expirada: {}", image.getStorageUrl(), e);
+            }
+        }
+        log.info("Limpeza finalizada. {} imagens anônimas deletadas.", deletedCount);
     }
 }
