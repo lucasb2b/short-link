@@ -51,8 +51,21 @@ public class AuthControllerV1 {
                     content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
     })
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
-        String token = authService.login(request);
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+        LoginResponseDTO response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Atualizar token", description = "Gera um novo JWT a partir do refresh token.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Token atualizado com sucesso",
+                    content = @Content(schema = @Schema(implementation = LoginResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Refresh token inválido",
+                    content = @Content(schema = @Schema(implementation = ErrorResponseDTO.class)))
+    })
+    public ResponseEntity<LoginResponseDTO> refresh(@Valid @RequestBody RefreshTokenRequestDTO request) {
+        LoginResponseDTO response = authService.refreshToken(request.refreshToken());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/verify-email")

@@ -4,6 +4,7 @@ import br.com.lucas.shortlink.dtos.request.*;
 import br.com.lucas.shortlink.entities.EmailVerificationToken;
 import br.com.lucas.shortlink.entities.PasswordResetToken;
 import br.com.lucas.shortlink.entities.User;
+import br.com.lucas.shortlink.dtos.response.LoginResponseDTO;
 import br.com.lucas.shortlink.exceptions.*;
 import br.com.lucas.shortlink.repositories.EmailVerificationTokenRepository;
 import br.com.lucas.shortlink.repositories.PasswordResetTokenRepository;
@@ -76,11 +77,11 @@ public class AuthService {
 
     /**
      * Realiza login, verificando se o e-mail está confirmado.
-     * @return token JWT
+     * @return LoginResponseDTO contendo token e refreshToken
      * @throws InvalidCredentialsException se credenciais inválidas
      * @throws EmailNotVerifiedException se o e-mail não foi verificado
      */
-    public String login(LoginRequestDTO request) {
+    public LoginResponseDTO login(LoginRequestDTO request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Credenciais inválidas"));
         if (!user.getEmailVerified()) {
@@ -105,7 +106,31 @@ public class AuthService {
         extraClaims.put("name", user.getName());
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return jwtService.generateToken(extraClaims, userDetails);
+        String token = jwtService.generateToken(extraClaims, userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
+
+        return new LoginResponseDTO(token, refreshToken);
+    }
+
+    /**
+     * Gera novos tokens a partir de um refreshToken válido.
+     */
+    public LoginResponseDTO refreshToken(String refreshToken) {
+        String userEmail = jwtService.extractUsername(refreshToken);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new InvalidCredentialsException("Usuário não encontrado."));
+
+        if (!jwtService.isTokenValid(refreshToken, user)) {
+            throw new InvalidCredentialsException("Refresh token inválido ou expirado.");
+        }
+
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("name", user.getName());
+
+        String newToken = jwtService.generateToken(extraClaims, user);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+
+        return new LoginResponseDTO(newToken, newRefreshToken);
     }
 
     /**
