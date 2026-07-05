@@ -10,16 +10,20 @@ import eu.bitwalker.useragentutils.UserAgent;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
+import lombok.Data;
 
 @Component
 public class AnalyticsConsumer {
 
     private final AnalyticsRepository analyticsRepository;
     private final LinkRepository linkRepository;
+    private final RestTemplate restTemplate;
 
     public AnalyticsConsumer(AnalyticsRepository analyticsRepository, LinkRepository linkRepository) {
         this.analyticsRepository = analyticsRepository;
         this.linkRepository = linkRepository;
+        this.restTemplate = new RestTemplate();
     }
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_ANALYTICS)
@@ -47,11 +51,24 @@ public class AnalyticsConsumer {
         }
     }
 
-    // Mantivemos o seu método de resolução de país
     private String resolveCountry(String ip) {
-        if (ip.equals("0:0:0:0:0:0:0:1") || ip.equals("127.0.0.1")) {
+        if (ip == null || ip.equals("0:0:0:0:0:0:0:1") || ip.equals("127.0.0.1") || ip.startsWith("192.168.")) {
             return "Localhost";
         }
-        return "Brazil";
+        try {
+            IpApiResponse response = restTemplate.getForObject("http://ip-api.com/json/" + ip, IpApiResponse.class);
+            if (response != null && "success".equals(response.getStatus()) && response.getCountry() != null) {
+                return response.getCountry();
+            }
+        } catch (Exception e) {
+            // Em caso de falha de conexão com a API, ignora e retorna Desconhecido
+        }
+        return "Desconhecido";
+    }
+
+    @Data
+    public static class IpApiResponse {
+        private String status;
+        private String country;
     }
 }

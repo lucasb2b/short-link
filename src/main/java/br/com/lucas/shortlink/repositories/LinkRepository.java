@@ -19,4 +19,6 @@ public interface LinkRepository extends JpaRepository<Link, UUID> {
     Page<Link> findByUserEmail(String email, Pageable pageable);
 
     Page<Link> findByUserEmailAndRevokedFalse(String email, Pageable pageable);
+
+    long countByUserEmail(String email);
 }

@@ -25,4 +25,6 @@ public interface ImageRepository extends JpaRepository<Image, UUID> {
     List<Image> findAllByExpiresAtBefore(LocalDateTime dateTime);
 
     Page<Image> findByUserEmail(String email, Pageable pageable);
+
+    long countByUserEmail(String email);
 }
