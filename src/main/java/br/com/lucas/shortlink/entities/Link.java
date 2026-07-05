@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -51,10 +52,10 @@ public class Link {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Formula("(SELECT COUNT(a.id_analytics) FROM tb_analytics a WHERE a.link_id = id_link)")
+    private long clicksCount;
+
     public long getClicks() {
-        if (this.analytics == null) {
-            return 0;
-        }
-        return this.analytics.size();
+        return clicksCount;
     }
 }
