@@ -17,8 +17,10 @@ public interface ImageRepository extends JpaRepository<Image, UUID> {
 
     Optional<Image> findByShortCode(String shortCode);
 
-    // Busca imagens que contenham a tag especificada, ignorando letras maiúsculas/minúsculas
-    @Query("SELECT i FROM Image i JOIN i.tags t WHERE LOWER(t) = LOWER(:tag)")
+    boolean existsByShortCode(String shortCode);
+
+    // Busca imagens públicas que contenham a tag especificada
+    @Query("SELECT i FROM Image i JOIN i.tags t WHERE LOWER(t) = LOWER(:tag) AND i.isPrivate = false")
     Page<Image> findByTag(@Param("tag") String tag, Pageable pageable);
 
     // Método útil para criar um @Scheduled no futuro para apagar do banco os expirados

@@ -7,6 +7,7 @@ import br.com.lucas.shortlink.exceptions.InvalidFileException;
 import br.com.lucas.shortlink.exceptions.ResourceNotFoundException;
 import br.com.lucas.shortlink.repositories.ImageRepository;
 import br.com.lucas.shortlink.repositories.UserRepository;
+import br.com.lucas.shortlink.utils.ShortCodeGenerator;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -67,10 +68,15 @@ public class ImageService {
             expiresAt = null;
         }
 
-        String shortCode = generateUniqueShortCode();
+        String shortCode;
+        boolean exists;
+        do {
+            shortCode = ShortCodeGenerator.generate(6);
+            exists = imageRepository.existsByShortCode(shortCode);
+        } while (exists);
 
-        // Salva o arquivo fisicamente no computador e retorna o nome gerado
-        String fileName = saveFileLocally(file, shortCode);
+        // Salva o arquivo fisicamente no computador e retorna o nome gerado (com UUID)
+        String fileName = saveFileLocally(file);
 
         Image image = Image.builder()
                 .originalFilename(file.getOriginalFilename())
@@ -99,10 +105,9 @@ public class ImageService {
             throw new ResourceNotFoundException("Esta imagem expirou e não está mais disponível.");
         }
 
-        // Se a imagem é privada, só o dono pode visualizá-la
-        if (image.isPrivate()) {
+        // Se a imagem é privada e pertence a um usuário, só o dono pode visualizá-la
+        if (image.isPrivate() && image.getUser() != null) {
             boolean isOwner = requesterEmail != null
-                    && image.getUser() != null
                     && image.getUser().getEmail().equals(requesterEmail);
             if (!isOwner) {
                 throw new ResourceNotFoundException("Imagem não encontrada");
@@ -173,7 +178,7 @@ public class ImageService {
     }
 
     // Método que faz a gravação real no HD
-    private String saveFileLocally(MultipartFile file, String shortCode) {
+    private String saveFileLocally(MultipartFile file) {
         try {
             // Pega a extensão original (ex: .png)
             String originalName = file.getOriginalFilename();
@@ -181,10 +186,10 @@ public class ImageService {
                     ? originalName.substring(originalName.lastIndexOf("."))
                     : "";
 
-            // Gera um nome único para evitar conflito (ex: xyz123.png)
-            String fileName = shortCode + extension;
+            // Gera um nome único longo para o arquivo físico
+            String fileName = UUID.randomUUID().toString() + extension;
 
-            // Resolve o caminho final (uploads/xyz123.png) e copia os bytes
+            // Resolve o caminho final e copia os bytes
             Path targetLocation = this.uploadDir.resolve(fileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
@@ -192,10 +197,6 @@ public class ImageService {
         } catch (IOException ex) {
             throw new FileStorageException("Não foi possível armazenar o arquivo. Tente novamente!");
         }
-    }
-
-    private String generateUniqueShortCode() {
-        return UUID.randomUUID().toString().substring(0, 6);
     }
 
     public Page<Image> getUserImages(String email, int page) {
