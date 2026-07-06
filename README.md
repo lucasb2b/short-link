@@ -69,7 +69,7 @@ A <i>Stack</i> foi escolhida para simular um ambiente de microsserviços maduro:
 
 ---
 
-## 👨‍💻 Diferenciais e Tomada de Decisão (Para Recrutadores)
+## 👨‍💻 Diferenciais e Tomada de Decisão
 
 Este repositório não é apenas um "CRUD". Ao desenvolver o Tremz.in, foquei em antecipar e neutralizar riscos que ocorrem em aplicações empresariais reais:
 
