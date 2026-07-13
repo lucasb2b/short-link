@@ -24,7 +24,7 @@ public class Link {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID idLink;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 2048)
     private String originalUrl;
 
     @Column(unique = true, nullable = false)
