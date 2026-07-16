@@ -1,5 +1,6 @@
 package br.com.lucas.shortlink.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -11,15 +12,16 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    @Value("${app.base-url}")
+    private String frontendUrl;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 🚨 MUDE PARA: setAllowedOriginPatterns
-        // Isso permite qualquer IP (coringa "*") mesmo com Credentials = true
-        configuration.setAllowedOriginPatterns(
-                List.of("*")
+        configuration.setAllowedOrigins(
+                List.of(frontendUrl, "http://localhost:3000")
         );
 
         configuration.setAllowedMethods(
@@ -27,7 +29,7 @@ public class CorsConfig {
         );
 
         configuration.setAllowedHeaders(
-                List.of("*")
+                List.of("Authorization", "Content-Type", "X-Requested-With", "Accept")
         );
 
         configuration.setAllowCredentials(true);
@@ -35,12 +37,8 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
 }
-
